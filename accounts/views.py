@@ -16,10 +16,10 @@ def login_view(request):
     serializer = LoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     
-    email = serializer.validated_data['email']
+    username = serializer.validated_data['username']
     password = serializer.validated_data['password']
     
-    user = authenticate(request, username=email, password=password)
+    user = authenticate(request, username=username, password=password)
     
     if user is None:
         return Response(
