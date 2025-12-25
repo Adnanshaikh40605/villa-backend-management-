@@ -1,6 +1,8 @@
 """
 Script to create a superuser in production
-Usage: railway run python create_production_superuser.py
+Usage: Run this from Railway Shell UI:
+       1. Railway → Service → Shell
+       2. python create_production_superuser.py
 """
 import os
 import django
