@@ -196,7 +196,7 @@ SIMPLE_JWT = {
 # CORS settings
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173'
+    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,https://www.vacationbna.ai,https://vacationbna.ai'
 ).split(',')
 
 CORS_ALLOW_CREDENTIALS = True
@@ -204,7 +204,7 @@ CORS_ALLOW_CREDENTIALS = True
 # CSRF settings - use os.getenv for Railway compatibility
 CSRF_TRUSTED_ORIGINS = os.getenv(
     'CSRF_TRUSTED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000'
+    'http://localhost:3000,http://127.0.0.1:3000,https://www.vacationbna.ai,https://vacationbna.ai,https://villa-backend-management-production.up.railway.app'
 ).split(',')
 
 # Security settings for production
