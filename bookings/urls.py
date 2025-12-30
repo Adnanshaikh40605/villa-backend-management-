@@ -9,6 +9,10 @@ router.register(r'', views.BookingViewSet, basename='booking')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('dashboard/stats/', views.dashboard_stats, name='dashboard_stats'),
-    path('dashboard/today-activity/', views.today_activity, name='today_activity'),
+    # Dashboard endpoints
+    path('dashboard-overview/', views.dashboard_overview, name='dashboard_overview'),
+    path('recent-bookings/', views.recent_bookings, name='recent_bookings'),
+    path('revenue-chart/', views.revenue_chart, name='revenue_chart'),
+    path('villa-performance/', views.villa_performance, name='villa_performance'),
+    path('booking-sources/', views.booking_sources, name='booking_sources'),
 ]
