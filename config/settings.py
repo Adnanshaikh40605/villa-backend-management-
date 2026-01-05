@@ -179,8 +179,8 @@ REST_FRAMEWORK = {
 
 # JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', default=1440, cast=int)),
-    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=config('JWT_REFRESH_TOKEN_LIFETIME', default=10080, cast=int)),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', default=10080, cast=int)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=config('JWT_REFRESH_TOKEN_LIFETIME', default=20160, cast=int)),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
@@ -197,7 +197,7 @@ SIMPLE_JWT = {
 # CORS settings
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,https://www.vacationbna.ai,https://vacationbna.ai'
+    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,https://www.vacationbna.ai,https://vacationbna.ai,http://localhost:8081'
 ).split(',')
 
 CORS_ALLOW_CREDENTIALS = False
@@ -211,7 +211,7 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 # CSRF settings - use os.getenv for Railway compatibility
 CSRF_TRUSTED_ORIGINS = os.getenv(
     'CSRF_TRUSTED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,https://www.vacationbna.ai,https://vacationbna.ai,https://villa-backend-management-production.up.railway.app'
+    'http://localhost:3000,http://127.0.0.1:3000,https://www.vacationbna.ai,https://vacationbna.ai,https://villa-backend-management-production.up.railway.app,http://localhost:8081'
 ).split(',')
 
 CORS_ALLOW_ALL_ORIGINS = True # DEBUG
