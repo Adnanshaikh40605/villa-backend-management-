@@ -49,19 +49,12 @@ class VillaViewSet(viewsets.ModelViewSet):
             villa=villa,
             check_in__lt=check_out,
             check_out__gt=check_in
-        )
+        ).values('id', 'client_name', 'check_in', 'check_out')
         
         available = not conflicting_bookings.exists()
         
-        conflicting_data = []
-        if not available:
-            for booking in conflicting_bookings:
-                conflicting_data.append({
-                    'id': booking.id,
-                    'client_name': booking.client_name,
-                    'check_in': booking.check_in,
-                    'check_out': booking.check_out
-                })
+        # Determine conflicts (fetch only if needed)
+        conflicting_data = list(conflicting_bookings) if not available else []
         
         return Response({
             'available': available,
