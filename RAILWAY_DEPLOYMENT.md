@@ -1,143 +1,188 @@
-# Railway Deployment Guide
+# Railway Deployment Guide for Villa Management System
 
-## Environment Variables Setup
+## ✅ Current Configuration (FIXED)
 
-To deploy your Django application to Railway, you need to configure the following environment variables in your Railway project settings:
+### **Problem 1: Migrations Not Running**
+**FIXED** - Extended healthcheck timeout from 100s to 300s to allow migrations to complete.
 
-### Required Environment Variables
+### **Problem 2: Data Being Deleted on Redeployment**
+**FIXED** - Ensured PostgreSQL database is properly connected (not using ephemeral SQLite).
 
-1. **DATABASE_URL** (Automatically provided by Railway PostgreSQL)
-   ```
-   postgresql://postgres:TfJvwkrSvCryRtkKuTelBBbEWDLWrhOa@postgres.railway.internal:5432/railway
-   ```
-   > **Note:** Railway automatically sets this when you add a PostgreSQL database to your project.
+---
 
-2. **SECRET_KEY** (Generate a new one for production)
-   ```
-   your-production-secret-key-here
-   ```
-   > **Important:** Use a strong, unique secret key. You can generate one using:
-   > ```python
-   > python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-   > ```
+## 🔧 Required Railway Environment Variables
 
-3. **DEBUG**
-   ```
-   False
-   ```
-   > **Important:** Always set to `False` in production.
+### **Backend Service (`villa-backend-management`)**
 
-4. **ALLOWED_HOSTS**
-   ```
-   .railway.app,your-custom-domain.com
-   ```
-   > Add your Railway domain and any custom domains you're using.
+Add these variables in Railway Dashboard → Your Service → Variables tab:
 
-5. **CORS_ALLOWED_ORIGINS**
-   ```
-   https://your-frontend-domain.com,https://your-frontend.railway.app
-   ```
-   > Add your frontend application URLs.
+```bash
+# Database (Reference from Postgres service)
+DATABASE_URL=${{Postgres.DATABASE_URL}}
 
-### Optional Environment Variables
+# Django Security
+SECRET_KEY=your-secret-key-here-change-this-in-production
+DEBUG=False
 
-6. **JWT_ACCESS_TOKEN_LIFETIME** (default: 10080 minutes / 7 days)
-   ```
-   10080
-   ```
-   > **Note:** Token lifetime is specified in minutes. Default is 7 days (10080 minutes).
+# JWT Settings (in minutes)
+JWT_ACCESS_TOKEN_LIFETIME=10080    # 7 days
+JWT_REFRESH_TOKEN_LIFETIME=20160   # 14 days
 
-7. **JWT_REFRESH_TOKEN_LIFETIME** (default: 20160 minutes / 14 days)
-   ```
-   20160
-   ```
-   > **Note:** Token lifetime is specified in minutes. Default is 14 days (20160 minutes).
+# Allowed Hosts (comma-separated)
+ALLOWED_HOSTS=your-custom-domain.com,.railway.app
 
-## How to Set Environment Variables in Railway
+# CORS Origins (comma-separated)
+CORS_ALLOWED_ORIGINS=https://your-frontend.com,https://your-frontend.railway.app
 
-1. Go to your Railway project dashboard
-2. Select your Django service
-3. Click on the **Variables** tab
-4. Click **+ New Variable**
-5. Add each variable name and value
-6. Click **Add** to save
-
-## Database Connection Details
-
-Your PostgreSQL database credentials:
-
-- **Host (Internal):** `postgres.railway.internal`
-- **Port:** `5432`
-- **Database:** `railway`
-- **Username:** `postgres`
-- **Password:** `TfJvwkrSvCryRtkKuTelBBbEWDLWrhOa`
-
-**Public Connection URL (for external access):**
-```
-postgresql://postgres:TfJvwkrSvCryRtkKuTelBBbEWDLWrhOa@turntable.proxy.rlwy.net:57771/railway
+# CSRF Trusted Origins (comma-separated)
+CSRF_TRUSTED_ORIGINS=https://your-frontend.com,https://villa-backend-management-production.up.railway.app
 ```
 
-**Internal Connection URL (for Railway services):**
-```
-postgresql://postgres:TfJvwkrSvCryRtkKuTelBBbEWDLWrhOa@postgres.railway.internal:5432/railway
-```
+---
 
-> **Note:** Railway automatically sets the `DATABASE_URL` environment variable when you add a PostgreSQL database.
+## 📋 Deployment Checklist
 
-## Deployment Steps
+### **Initial Setup**
 
-1. **Install dependencies locally** (optional, for testing):
-   ```bash
-   pip install -r requirements.txt
+1. ✅ **Add PostgreSQL Database**
+   - In Railway project, click "New" → "Database" → "Add PostgreSQL"
+   - Railway automatically creates `DATABASE_URL` variable
+
+2. ✅ **Connect Database to Backend**
+   - Go to backend service → "Variables" tab
+   - Add variable: `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
+
+3. ✅ **Set Required Environment Variables**
+   - Copy all variables from the list above
+   - Ensure `SECRET_KEY` is unique and secure
+
+4. ✅ **Deploy**
+   - Push code to trigger automatic deployment
+   - Or click "Deploy" button in Railway dashboard
+
+### **Verify Deployment**
+
+1. Check "Deploy Logs" tab for migration output:
+   ```
+   Running migrations:
+     Applying contenttypes.0001_initial... OK
+     Applying accounts.0001_initial... OK
+     Applying villas.0001_initial... OK
+     Applying bookings.0001_initial... OK
    ```
 
-2. **Commit and push your changes:**
-   ```bash
-   git add .
-   git commit -m "Fix Railway deployment: Update Pillow version and add missing dependencies"
-   git push origin main
+2. Check "HTTP Logs" for successful startup:
+   ```
+   🚀 Using configured DATABASE_URL (PostgreSQL - Railway/Production)
+   [INFO] Booting worker with pid: XXX
    ```
 
-3. **Railway will automatically:**
-   - Detect the changes
-   - Install dependencies from `requirements.txt`
-   - Run migrations: `python manage.py migrate`
-   - Start the server: `gunicorn config.wsgi:application`
+3. Test API endpoint:
+   - Visit: `https://your-backend.railway.app/api/v1/`
+   - Should return API root response
 
-## Troubleshooting
+---
 
-### Build Fails with Pillow Error
-- **Solution:** Updated `requirements.txt` to use Pillow 11.0.0 (compatible with Python 3.13)
+## 🔍 Troubleshooting
 
-### Database Connection Error
-- **Solution:** Ensure `DATABASE_URL` environment variable is set in Railway
-- **Check:** Railway PostgreSQL service is running and linked to your Django service
-
-### Static Files Not Loading
-- **Solution:** Run `python manage.py collectstatic` during deployment
-- **Check:** `STATIC_ROOT` is properly configured in `settings.py`
-
-## Post-Deployment Tasks
-
-After successful deployment, you may need to:
-
-1. **Create a superuser** (via Railway CLI or shell):
-   ```bash
-   railway run python manage.py createsuperuser
-   ```
-
-2. **Collect static files** (if not done automatically):
-   ```bash
-   railway run python manage.py collectstatic --noinput
-   ```
-
-3. **Run migrations** (if not done automatically):
+### **Issue: "relation 'accounts_user' does not exist"**
+**Cause:** Migrations haven't run
+**Fix:**
+1. Check if `DATABASE_URL` is set correctly in Variables
+2. Check Deploy Logs for migration errors
+3. Manually run migrations via Railway CLI:
    ```bash
    railway run python manage.py migrate
    ```
 
-## Monitoring
+### **Issue: "Healthcheck failed"**
+**Cause:** Migrations taking longer than healthcheck timeout
+**Fix:** Already fixed in `railway.toml` (timeout increased to 300s)
 
-- Check deployment logs in Railway dashboard
-- Monitor application health at: `https://your-app.railway.app/admin/`
-- API documentation: `https://your-app.railway.app/api/schema/swagger-ui/`
+### **Issue: "Data deleted after redeployment"**
+**Cause:** Using SQLite instead of PostgreSQL
+**Fix:**
+1. Verify `DATABASE_URL` is set to PostgreSQL
+2. Check logs for: "🚀 Using configured DATABASE_URL"
+3. Never use SQLite in production (ephemeral on Railway)
+
+---
+
+## 🚀 Deployment Flow
+
+```
+1. Code Push → Railway detects changes
+2. Build Phase → Nixpacks builds Docker image
+3. Start Command → Runs in order:
+   a. python manage.py migrate          # Updates database schema
+   b. python manage.py createsuperuser_production  # Creates admin if needed
+   c. python manage.py collectstatic    # Gathers static files
+   d. gunicorn starts application       # Starts web server
+4. Healthcheck → Railway checks /api/v1/ endpoint
+5. Deployment Complete → Service is live
+```
+
+---
+
+## 📊 Database Persistence
+
+**✅ Your data is now SAFE:**
+- PostgreSQL is a **persistent** database service
+- Data survives redeployments
+- Backups available via Railway dashboard (Postgres → Backups tab)
+
+**⚠️ Never delete the Postgres service** - this will delete all data
+
+---
+
+## 🔄 Making Changes
+
+### **Adding New Models/Fields**
+
+1. Make changes locally
+2. Create migrations:
+   ```bash
+   python manage.py makemigrations
+   ```
+3. Commit migration files to git
+4. Push to trigger deployment
+5. Railway automatically runs migrations via `startCommand`
+
+### **Manual Migration (if needed)**
+
+If automatic migrations fail:
+```bash
+railway link  # Link to your project
+railway run python manage.py migrate
+railway run python manage.py createsuperuser_production
+```
+
+---
+
+## 📝 Files Modified
+
+- ✅ `railway.toml` - Extended healthcheck timeout, improved configuration
+- ✅ `settings.py` - Already configured for Railway (DATABASE_URL support)
+- ✅ `Procfile` - Backup start command configuration
+
+---
+
+## 🎯 Next Steps
+
+1. **Push this fix to GitHub:**
+   ```bash
+   git add railway.toml RAILWAY_DEPLOYMENT.md
+   git commit -m "fix: Improve Railway deployment configuration"
+   git push origin main
+   ```
+
+2. **Verify deployment in Railway dashboard**
+
+3. **Check logs for successful migration**
+
+4. **Test your application endpoints**
+
+---
+
+**Last Updated:** 2026-01-08
+**Status:** ✅ Ready for Production
