@@ -101,23 +101,44 @@ import sys
 # Initialize DATABASES dictionary
 DATABASES = {}
 
-# Check for DATABASE_URL in environment
+# Check for DATABASE_URL in environment (for Railway/Production)
 DATABASE_URL = config('DATABASE_URL', default=None)
 
-if DATABASE_URL:
-    # Production / Railway usage (or local with .env)
+# Check if we should use local PostgreSQL (only in DEBUG mode)
+USE_LOCAL_DB = config('USE_LOCAL_DB', default=False, cast=bool)
+
+if DATABASE_URL and not USE_LOCAL_DB:
+    # Production / Railway usage (DATABASE_URL set and not forcing local DB)
     DATABASES['default'] = dj_database_url.parse(DATABASE_URL)
-    print("🚀 Using configured DATABASE_URL (PostgreSQL)", file=sys.stderr)
+    print("🚀 Using configured DATABASE_URL (PostgreSQL - Railway/Production)", file=sys.stderr)
+elif USE_LOCAL_DB or (DEBUG and not DATABASE_URL):
+    # Local development PostgreSQL
+    # Database name can have spaces (e.g., "villa manage") - Django handles this automatically
+    local_db_name = config('LOCAL_DB_NAME', default='villa_manage')
+    local_db_user = config('LOCAL_DB_USER', default='postgres')
+    local_db_password = config('LOCAL_DB_PASSWORD', default='adnan12')
+    local_db_host = config('LOCAL_DB_HOST', default='localhost')
+    local_db_port = config('LOCAL_DB_PORT', default='5432')
+    
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': local_db_name,
+        'USER': local_db_user,
+        'PASSWORD': local_db_password,
+        'HOST': local_db_host,
+        'PORT': local_db_port,
+    }
+    print(f"🔧 Using local PostgreSQL database: {local_db_name} on {local_db_host}:{local_db_port}", file=sys.stderr)
 else:
-    # No DATABASE_URL found
+    # No DATABASE_URL found and not in DEBUG mode
     if not DEBUG:
         # CRITICAL: Fail in production if no DB URL is found (prevents data loss)
         print("❌ CRITICAL ERROR: DATABASE_URL is missing in production!", file=sys.stderr)
         print("   The application is refusing to start to prevent falling back to ephemeral SQLite.", file=sys.stderr)
         sys.exit(1)
     
-    # Local development fallback
-    print("⚠️  DATABASE_URL not found, falling back to local SQLite", file=sys.stderr)
+    # Fallback to SQLite only as last resort
+    print("⚠️  DATABASE_URL not found and local DB not configured, falling back to local SQLite", file=sys.stderr)
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
@@ -191,9 +212,14 @@ REST_FRAMEWORK = {
 }
 
 # JWT settings
+# Read token lifetimes from environment variables (in minutes) or use defaults
+# Default: 7 days (10080 minutes) for access token, 14 days (20160 minutes) for refresh token
+JWT_ACCESS_TOKEN_LIFETIME_MINUTES = config('JWT_ACCESS_TOKEN_LIFETIME', default=10080, cast=int)  # 7 days in minutes
+JWT_REFRESH_TOKEN_LIFETIME_MINUTES = config('JWT_REFRESH_TOKEN_LIFETIME', default=20160, cast=int)  # 14 days in minutes
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', default=10080, cast=int)),
-    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=config('JWT_REFRESH_TOKEN_LIFETIME', default=20160, cast=int)),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=JWT_ACCESS_TOKEN_LIFETIME_MINUTES),
+    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=JWT_REFRESH_TOKEN_LIFETIME_MINUTES),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,

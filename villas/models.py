@@ -1,5 +1,5 @@
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Villa(models.Model):
@@ -23,6 +23,27 @@ class Villa(models.Model):
         validators=[MinValueValidator(0)],
         verbose_name='Price Per Night (INR)'
     )
+    weekend_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        null=True,
+        blank=True,
+        verbose_name='Weekend Price (INR)'
+    )
+    special_day_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        null=True,
+        blank=True,
+        verbose_name='Special Day Price (INR)'
+    )
+    weekend_days = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Weekend Days (0=Mon, 6=Sun)'
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -37,6 +58,12 @@ class Villa(models.Model):
     )
     description = models.TextField(blank=True, verbose_name='Description')
     amenities = models.JSONField(default=list, blank=True, verbose_name='Amenities')
+    special_prices = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Special Prices Config',
+        help_text='List of special pricing rules (ranges or specific dates)'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -51,4 +78,26 @@ class Villa(models.Model):
     @property
     def is_active(self):
         return self.status == 'active'
+
+
+class GlobalSpecialDay(models.Model):
+    """
+    Represents a global special day configuration (e.g. Christmas, New Year)
+    """
+    name = models.CharField(max_length=100)
+    day = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(31)])
+    month = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
+    year = models.PositiveIntegerField(null=True, blank=True, verbose_name="Year (Optional)")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['month', 'day']
+        unique_together = ['day', 'month', 'year']
+        
+    def __str__(self):
+        date_str = f"{self.day}/{self.month}"
+        if self.year:
+            date_str += f"/{self.year}"
+        return f"{self.name} ({date_str})"
 

@@ -1,10 +1,18 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Q
-from .models import Villa
-from .serializers import VillaSerializer, VillaListSerializer
+from django.db.models import Count, Sum
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
+from datetime import timedelta
+from .models import Villa, GlobalSpecialDay
+from .serializers import VillaSerializer, VillaListSerializer, GlobalSpecialDaySerializer
 from bookings.models import Booking
+
+
+class GlobalSpecialDayViewSet(viewsets.ModelViewSet):
+    queryset = GlobalSpecialDay.objects.all()
+    serializer_class = GlobalSpecialDaySerializer
 
 
 class VillaViewSet(viewsets.ModelViewSet):

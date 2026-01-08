@@ -43,7 +43,7 @@ class Booking(models.Model):
         default='booked',
         verbose_name='Status'
     )
-    number_of_guests = models.PositiveIntegerField(
+    number_of_guests = models.IntegerField(
         null=True,
         blank=True,
         verbose_name='Number of Guests'
@@ -101,19 +101,38 @@ class Booking(models.Model):
                 })
         
         # Phone is now optional for all bookings
-        
-        # Only validate number_of_guests if it's provided and not None
-        if self.number_of_guests is not None and self.villa:
-            if self.number_of_guests > self.villa.max_guests:
-                raise ValidationError({
-                    'number_of_guests': f'Number of guests cannot exceed villa maximum ({self.villa.max_guests}).'
-                })
+        # Number of guests validation removed - users can enter any number of guests
     
     def save(self, *args, **kwargs):
-        # Auto-calculate total amount
+        # Auto-calculate total amount based on villa pricing configuration
         if self.check_in and self.check_out and self.villa:
-            nights = (self.check_out - self.check_in).days
-            self.total_amount = nights * self.villa.price_per_night
+            from decimal import Decimal
+            from datetime import timedelta
+            
+            total = Decimal('0')
+            current_date = self.check_in
+            
+            # Iterate through each night of the stay
+            while current_date < self.check_out:
+                day_of_week = current_date.weekday()  # 0=Monday, 6=Sunday
+                
+                # Check if this day is configured as a weekend day for this villa
+                is_configured_weekend = (
+                    self.villa.weekend_days and 
+                    day_of_week in self.villa.weekend_days
+                )
+                
+                # Determine the price for this night
+                # Priority: Weekend price (if configured) > Base price
+                if is_configured_weekend and self.villa.weekend_price:
+                    price = self.villa.weekend_price
+                else:
+                    price = self.villa.price_per_night
+                
+                total += price
+                current_date += timedelta(days=1)
+            
+            self.total_amount = total
         
         self.full_clean()
         super().save(*args, **kwargs)

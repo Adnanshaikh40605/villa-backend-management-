@@ -41,15 +41,17 @@ To deploy your Django application to Railway, you need to configure the followin
 
 ### Optional Environment Variables
 
-6. **JWT_ACCESS_TOKEN_LIFETIME** (default: 60 minutes)
-   ```
-   60
-   ```
-
-7. **JWT_REFRESH_TOKEN_LIFETIME** (default: 10080 minutes / 7 days)
+6. **JWT_ACCESS_TOKEN_LIFETIME** (default: 10080 minutes / 7 days)
    ```
    10080
    ```
+   > **Note:** Token lifetime is specified in minutes. Default is 7 days (10080 minutes).
+
+7. **JWT_REFRESH_TOKEN_LIFETIME** (default: 20160 minutes / 14 days)
+   ```
+   20160
+   ```
+   > **Note:** Token lifetime is specified in minutes. Default is 14 days (20160 minutes).
 
 ## How to Set Environment Variables in Railway
 

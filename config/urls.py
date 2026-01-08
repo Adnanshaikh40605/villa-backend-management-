@@ -28,7 +28,7 @@ urlpatterns = [
     
     # API v1 endpoints
     path('api/v1/auth/', include('accounts.urls')),
-    path('api/v1/villas/', include('villas.urls')),
+    path('api/v1/', include('villas.urls')),
     path('api/v1/bookings/', include('bookings.urls')),
     
     # API documentation
