@@ -6,8 +6,8 @@ builder = "NIXPACKS"
 startCommand = "python manage.py migrate && (python manage.py createsuperuser_production || echo 'Superuser creation skipped') && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 2"
 
 # Healthcheck configuration
-# Using /api/v1/ instead of /admin/ as it doesn't require authentication
-healthcheckPath = "/api/v1/"
+# Using /health/ - a dedicated endpoint that doesn't require authentication
+healthcheckPath = "/health/"
 # Extended timeout to allow migrations to complete (especially with new schema changes)
 healthcheckTimeout = 300
 # Restart policy

@@ -24,14 +24,16 @@ from .views import home_view, health_check
 urlpatterns = [
     # Home page
     path('', home_view, name='home'),
-    path('admin/', admin.site.urls),
     
-    # Health check endpoint (must come before other api/v1/ routes)
-    path('api/v1/', health_check, name='health-check'),
+    # Health check endpoint for Railway and monitoring
+    path('health/', health_check, name='health-check'),
+    
+    # Admin panel
+    path('admin/', admin.site.urls),
     
     # API v1 endpoints
     path('api/v1/auth/', include('accounts.urls')),
-    path('api/v1/villas/', include('villas.urls')),
+    path('api/v1/', include('villas.urls')),
     path('api/v1/bookings/', include('bookings.urls')),
     
     # API documentation
