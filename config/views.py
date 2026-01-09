@@ -1,5 +1,20 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+
+
+@csrf_exempt
+def health_check(request):
+    """
+    Health check endpoint for Railway and monitoring services.
+    Returns a simple JSON response indicating the API is running.
+    No authentication required.
+    """
+    return JsonResponse({
+        'status': 'healthy',
+        'service': 'Villa Management API',
+        'version': '1.0.0'
+    })
 
 
 def home_view(request):
