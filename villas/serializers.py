@@ -40,5 +40,5 @@ class VillaListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'location', 'max_guests',
             'price_per_night', 'weekend_price', 'special_day_price', 
-            'weekend_days', 'status', 'image'
+            'weekend_days', 'status', 'image', 'special_prices'
         ]
