@@ -15,9 +15,9 @@ class Command(BaseCommand):
         User = get_user_model()
         
         # Superuser credentials
-        USERNAME = 'adnan'
-        NAME = 'Adnan'
-        PASSWORD = 'villa4'
+        USERNAME = 'doh'
+        NAME = 'Doh'
+        PASSWORD = '252702'
         
         try:
             # Check if user already exists
