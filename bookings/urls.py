@@ -2,6 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 
+# Router configuration
+
 app_name = 'bookings'
 
 router = DefaultRouter()
@@ -13,7 +15,11 @@ urlpatterns = [
     path('recent-bookings/', views.recent_bookings, name='recent_bookings'),
     path('revenue-chart/', views.revenue_chart, name='revenue_chart'),
     path('villa-performance/', views.villa_performance, name='villa_performance'),
-    path('booking-sources/', views.booking_sources, name='booking_sources'),
+    # Explicitly register calculate-price to avoid router issues - MOVED TO CONFIG/URLS.PY
+    # path('calculate-price/', views.calculate_price_view, name='calculate-price'),
+    
+    path('send-email-confirmation/<int:pk>/', views.send_email_confirmation, name='send-email-confirmation'),
+    
     # Router URLs (CRUD operations)
     path('', include(router.urls)),
 ]

@@ -63,12 +63,22 @@ class Booking(models.Model):
         blank=True,
         verbose_name='Booking Source'
     )
-    total_amount = models.DecimalField(
+    total_payment = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        verbose_name='Total Amount (INR)'
+        verbose_name='Total Payment (INR)',
+        help_text='Auto-calculated total booking amount'
+    )
+    advance_payment = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        default=0,
+        verbose_name='Advance Payment (INR)',
+        help_text='Amount paid in advance'
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -103,8 +113,86 @@ class Booking(models.Model):
         # Phone is now optional for all bookings
         # Number of guests validation removed - users can enter any number of guests
     
+    def _get_price_for_date(self, date):
+        """
+        Get the price for a specific date based on pricing priority.
+        Priority: Special Date Price > Weekend Price > Base Price
+        
+        Args:
+            date: The date to get the price for
+            
+        Returns:
+            Decimal: The price for the given date
+        """
+        from decimal import Decimal
+        from datetime import datetime
+        
+        # Priority 1: Check special date pricing
+        if self.villa.special_prices:
+            try:
+                special_prices = self.villa.special_prices
+                if isinstance(special_prices, list):
+                    for special_price in special_prices:
+                        if not isinstance(special_price, dict):
+                            continue
+                            
+                        # Get start and end dates
+                        start_date_str = special_price.get('start_date')
+                        end_date_str = special_price.get('end_date')
+                        price = special_price.get('price')
+                        
+                        if not all([start_date_str, end_date_str, price]):
+                            continue
+                        
+                        # Parse dates
+                        try:
+                            if isinstance(start_date_str, str):
+                                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                            else:
+                                start_date = start_date_str
+                                
+                            if isinstance(end_date_str, str):
+                                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                            else:
+                                end_date = end_date_str
+                            
+                            # Check if current date falls within this special price range
+                            if start_date <= date <= end_date:
+                                return Decimal(str(price))
+                        except (ValueError, TypeError):
+                            # Skip invalid date formats
+                            continue
+            except (TypeError, AttributeError):
+                # If special_prices is not a valid list, skip
+                pass
+        
+        # Priority 2: Check weekend pricing
+        day_of_week = date.weekday()  # 0=Monday, 6=Sunday
+        is_configured_weekend = (
+            self.villa.weekend_days and 
+            day_of_week in self.villa.weekend_days
+        )
+        
+        if is_configured_weekend and self.villa.weekend_price:
+            return self.villa.weekend_price
+        
+        # Priority 3: Base price
+        return self.villa.price_per_night
+    
     def save(self, *args, **kwargs):
-        # Auto-calculate total amount based on villa pricing configuration
+        """
+        Save the booking and auto-calculate total payment based on villa pricing.
+        
+        Pricing Priority (per night):
+        1. Special Date Price (from villa.special_prices)
+        2. Weekend Price (if day is in villa.weekend_days)
+        3. Base Price (villa.price_per_night)
+        
+        Payment Calculation:
+        - total_payment: Auto-calculated from pricing
+        - advance_payment: User-entered amount
+        - pending_payment: Calculated as (total_payment - advance_payment)
+        """
         if self.check_in and self.check_out and self.villa:
             from decimal import Decimal
             from datetime import timedelta
@@ -114,25 +202,21 @@ class Booking(models.Model):
             
             # Iterate through each night of the stay
             while current_date < self.check_out:
-                day_of_week = current_date.weekday()  # 0=Monday, 6=Sunday
-                
-                # Check if this day is configured as a weekend day for this villa
-                is_configured_weekend = (
-                    self.villa.weekend_days and 
-                    day_of_week in self.villa.weekend_days
-                )
-                
-                # Determine the price for this night
-                # Priority: Weekend price (if configured) > Base price
-                if is_configured_weekend and self.villa.weekend_price:
-                    price = self.villa.weekend_price
-                else:
-                    price = self.villa.price_per_night
-                
+                # Get price for this specific date using priority hierarchy
+                price = self._get_price_for_date(current_date)
                 total += price
                 current_date += timedelta(days=1)
             
-            self.total_amount = total
+            self.total_payment = total
+        
+        # Validate advance_payment doesn't exceed total_payment
+        if self.advance_payment and self.total_payment:
+            from decimal import Decimal
+            advance = self.advance_payment or Decimal('0')
+            if advance > self.total_payment:
+                raise ValidationError({
+                    'advance_payment': 'Advance payment cannot exceed total payment.'
+                })
         
         self.full_clean()
         super().save(*args, **kwargs)
@@ -143,4 +227,12 @@ class Booking(models.Model):
         if self.check_in and self.check_out:
             return (self.check_out - self.check_in).days
         return 0
+    
+    @property
+    def pending_payment(self):
+        """Calculate pending payment"""
+        from decimal import Decimal
+        total = self.total_payment or Decimal('0')
+        advance = self.advance_payment or Decimal('0')
+        return total - advance
 

@@ -20,6 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from .views import home_view, health_check
+from bookings import views as bookings_views
 
 urlpatterns = [
     # Home page
@@ -34,6 +35,10 @@ urlpatterns = [
     # API v1 endpoints
     path('api/v1/auth/', include('accounts.urls')),
     path('api/v1/', include('villas.urls')),
+    
+    # Explicitly register calculate-price here to guarantee precedence
+    path('api/v1/bookings/calculate-price/', bookings_views.calculate_price_view, name='calculate-price-override'),
+    
     path('api/v1/bookings/', include('bookings.urls')),
     
     # API documentation

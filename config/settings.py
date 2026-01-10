@@ -269,3 +269,18 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
 }
 
+
+# Email Configuration
+# Default to Console Backend for development/testing (prints to terminal)
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+# For production, we will use 'django.core.mail.backends.smtp.EmailBackend'
+
+# SMPT Settings (Load from environment or use placeholders)
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='info@vacationbna.com')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+# Default From Email
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

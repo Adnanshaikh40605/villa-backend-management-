@@ -7,7 +7,7 @@ class BookingAdmin(admin.ModelAdmin):
     """Admin interface for Booking model"""
     list_display = [
         'id', 'villa', 'client_name', 'check_in', 'check_out',
-        'status', 'payment_status', 'total_amount', 'created_at'
+        'status', 'payment_status', 'total_payment', 'advance_payment', 'created_at'
     ]
     list_filter = ['status', 'payment_status', 'booking_source', 'check_in']
     search_fields = ['client_name', 'client_phone', 'client_email']
@@ -22,7 +22,7 @@ class BookingAdmin(admin.ModelAdmin):
             'fields': ('client_name', 'client_phone', 'client_email', 'number_of_guests')
         }),
         ('Booking Details', {
-            'fields': ('payment_status', 'booking_source', 'total_amount', 'notes')
+            'fields': ('payment_status', 'booking_source', 'total_payment', 'advance_payment', 'notes')
         }),
         ('System Information', {
             'fields': ('created_by',),
@@ -30,4 +30,4 @@ class BookingAdmin(admin.ModelAdmin):
         }),
     )
     
-    readonly_fields = ['total_amount', 'created_by']
+    readonly_fields = ['total_payment', 'created_by']
