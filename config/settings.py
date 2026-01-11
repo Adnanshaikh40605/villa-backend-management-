@@ -30,10 +30,11 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-wkq+edhu9jxe#c1&)2t((
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,.railway.app').split(',')
-# Add wildcard for Railway domains
-if '.railway.app' in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append('*.railway.app')
+ALLOWED_HOSTS = [
+    "vacationbna.ai",
+    "www.vacationbna.ai",
+    "villa-backend-management-production.up.railway.app",
+]
 
 
 
@@ -233,27 +234,26 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-# CORS settings
-CORS_ALLOWED_ORIGINS = os.getenv(
-    'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,https://www.vacationbna.ai,https://vacationbna.ai,http://localhost:8081'
-).split(',')
+# ===== CORS (STRICT PRODUCTION) =====
+CORS_ALLOWED_ORIGINS = [
+    "https://vacationbna.ai",
+    "https://www.vacationbna.ai",
+    "https://villa-backend-management-production.up.railway.app",
+]
 
 CORS_ALLOW_CREDENTIALS = False
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
-    "cache-control",
-    "pragma",
-    "expires",
+    "authorization",
+    "content-type",
 ]
 
-# CSRF settings - use os.getenv for Railway compatibility
-CSRF_TRUSTED_ORIGINS = os.getenv(
-    'CSRF_TRUSTED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,https://www.vacationbna.ai,https://vacationbna.ai,https://villa-backend-management-production.up.railway.app,http://localhost:8081'
-).split(',')
-
-CORS_ALLOW_ALL_ORIGINS = True # DEBUG
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    "https://vacationbna.ai",
+    "https://www.vacationbna.ai",
+    "https://villa-backend-management-production.up.railway.app",
+]
 
 # Security settings for production
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
