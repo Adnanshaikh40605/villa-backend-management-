@@ -124,22 +124,20 @@ Best regards,
 VacationBNB Team
     """.strip()
     
+    if not booking.client_email:
+        return Response({'message': 'No client email provided for this booking.'}, status=status.HTTP_400_BAD_REQUEST)
+
     try:
         send_mail(
             subject,
             message,
             settings.DEFAULT_FROM_EMAIL,
-            [settings.EMAIL_HOST_USER], # For testing, send to self/admin. In real app, send to booking.client_email if existed
+            [booking.client_email],
             fail_silently=False,
         )
-        # Note: Booking model doesn't seem to have client_email, so sending to admin/host user for now 
-        # as per user request "send on the mial confimation" (implied to admin or just testing flow).
-        # Wait, user said "base on the customer... send on the mial". 
-        # But looking at models, I don't recall a client_email field. 
-        # I only saw client_name and phone.
-        # Let me re-check model quickly.
+        return Response({'message': f'Email sent successfully to {booking.client_email}'})
         
-        return Response({'message': 'Email sent successfully'})
+
     except Exception as e:
         print(f"Email Error: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -488,6 +486,9 @@ def dashboard_overview(request):
     if total_bookings > 0:
         avg_revenue = float(total_revenue) / total_bookings
     
+    # Active Clients (Unique clients based on phone number)
+    total_clients = Booking.objects.filter(status='booked').values('client_phone').distinct().count()
+
     return Response({
         'villas': {
             'total': total_villas,
@@ -502,6 +503,7 @@ def dashboard_overview(request):
         },
         'bookings': {
             'total': total_bookings,
+            'total_clients': total_clients, # Add this field
             'this_month': total_bookings_this_month,
             'upcoming_7_days': upcoming_bookings,
         },
