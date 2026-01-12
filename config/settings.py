@@ -34,6 +34,8 @@ ALLOWED_HOSTS = [
     "vacationbna.ai",
     "www.vacationbna.ai",
     "villa-backend-management-production.up.railway.app",
+    "localhost",
+    "127.0.0.1",
 ]
 
 
