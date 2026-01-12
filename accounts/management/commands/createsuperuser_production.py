@@ -52,7 +52,7 @@ class Command(BaseCommand):
             
             self.stdout.write(self.style.SUCCESS(f'\n🔗 You can now login at the admin panel'))
             self.stdout.write(f'   Username: {USERNAME}')
-            self.stdout.write(f'   Password: {PASSWORD}')
+            self.stdout.write(f'   Password: [REDACTED]')
             
             return 0
             
