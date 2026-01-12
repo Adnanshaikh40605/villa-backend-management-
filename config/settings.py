@@ -33,6 +33,7 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = [
     "vacationbna.ai",
     "www.vacationbna.ai",
+    "api.vacationbna.ai",
     "villa-backend-management-production.up.railway.app",
     ".railway.app",
     "localhost",
@@ -241,6 +242,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "https://vacationbna.ai",
     "https://www.vacationbna.ai",
+    "https://api.vacationbna.ai",
     "https://villa-backend-management-production.up.railway.app",
 ]
 
@@ -255,6 +257,7 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 CSRF_TRUSTED_ORIGINS = [
     "https://vacationbna.ai",
     "https://www.vacationbna.ai",
+    "https://api.vacationbna.ai",
     "https://villa-backend-management-production.up.railway.app",
 ]
 
