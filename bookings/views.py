@@ -193,12 +193,15 @@ def _get_price_for_date_helper(villa, date):
     return villa.price_per_night
 
 
+from .pagination import StandardResultsSetPagination
+
 class BookingViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Booking CRUD operations
     """
     queryset = Booking.objects.select_related('villa', 'created_by').all()
     serializer_class = BookingSerializer
+    pagination_class = StandardResultsSetPagination
     
     def get_serializer_class(self):
         if self.action == 'list':
@@ -232,6 +235,17 @@ class BookingViewSet(viewsets.ModelViewSet):
                 Q(client_name__icontains=search) |
                 Q(client_phone__icontains=search)
             )
+            
+        # Time Frame Filtering (for Current vs Completed tabs)
+        time_frame = self.request.query_params.get('time_frame', None)
+        if time_frame:
+            today = timezone.localdate()
+            if time_frame == 'completed':
+                # Completed: Check-out date is in the past
+                queryset = queryset.filter(check_out__lt=today)
+            elif time_frame == 'current':
+                # Current/Upcoming: Check-out date is today or in the future
+                queryset = queryset.filter(check_out__gte=today)
         
         return queryset
     
