@@ -18,7 +18,7 @@ class VillaSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'location', 'max_guests', 'price_per_night',
             'weekend_price', 'special_day_price', 'weekend_days', 'special_prices',
-            'status', 'image', 'description', 'amenities',
+            'status', 'image', 'description', 'amenities', 'order',
             'is_active', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -40,5 +40,5 @@ class VillaListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'location', 'max_guests',
             'price_per_night', 'weekend_price', 'special_day_price', 
-            'weekend_days', 'status', 'image', 'special_prices'
+            'weekend_days', 'status', 'image', 'special_prices', 'order'
         ]

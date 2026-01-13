@@ -2,7 +2,10 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import warnings
 
+# Suppress pkg_resources deprecation warning from setuptools
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API")
 
 def main():
     """Run administrative tasks."""

@@ -26,6 +26,12 @@ class Booking(models.Model):
         ('other', 'Other'),
     ]
     
+    PAYMENT_METHOD_CHOICES = [
+        ('online', 'Online'),
+        ('cash', 'Cash'),
+    ]
+
+    
     villa = models.ForeignKey(
         Villa,
         on_delete=models.PROTECT,
@@ -62,6 +68,13 @@ class Booking(models.Model):
         null=True,
         blank=True,
         verbose_name='Booking Source'
+    )
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name='Payment Method'
     )
     total_payment = models.DecimalField(
         max_digits=10,

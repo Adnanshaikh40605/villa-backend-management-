@@ -64,13 +64,14 @@ class Villa(models.Model):
         verbose_name='Special Prices Config',
         help_text='List of special pricing rules (ranges or specific dates)'
     )
+    order = models.IntegerField(default=0, verbose_name='Display Order')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         verbose_name = 'Villa'
         verbose_name_plural = 'Villas'
-        ordering = ['name']
+        ordering = ['order', 'name']
     
     def __str__(self):
         return self.name

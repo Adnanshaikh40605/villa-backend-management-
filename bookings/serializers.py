@@ -14,7 +14,7 @@ class BookingSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'villa', 'villa_details', 'client_name', 'client_phone',
             'client_email', 'check_in', 'check_out', 'status',
-            'number_of_guests', 'notes', 'payment_status', 'booking_source',
+            'number_of_guests', 'notes', 'payment_status', 'payment_method', 'booking_source',
             'total_payment', 'advance_payment', 'pending_payment', 'nights', 
             'created_at', 'updated_at'
         ]
@@ -74,6 +74,6 @@ class BookingListSerializer(serializers.ModelSerializer):
         model = Booking
         fields = [
             'id', 'villa', 'client_name', 'client_phone',
-            'check_in', 'check_out', 'status', 'payment_status',
+            'check_in', 'check_out', 'status', 'payment_status', 'payment_method',
             'total_payment', 'advance_payment', 'pending_payment'
         ]

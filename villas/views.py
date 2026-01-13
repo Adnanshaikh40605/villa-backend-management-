@@ -35,6 +35,51 @@ class VillaViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status_filter)
         
         return queryset
+
+
+
+    def perform_create(self, serializer):
+        new_order = serializer.validated_data.get('order', 0)
+        if new_order and new_order > 0:
+            from django.db.models import F
+            Villa.objects.filter(order__gte=new_order).update(order=F('order') + 1)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        new_order = serializer.validated_data.get('order')
+        instance = serializer.instance
+        old_order = instance.order
+
+        # Only proceed if order is provided, non-zero, and actually changing
+        if new_order is not None and new_order > 0 and new_order != old_order:
+            from django.db.models import F
+            
+            if old_order == 0:
+                # Case 1: Was unassigned (0), now assigned (X).
+                # Treat like a new insertion: Shift everything >= X down by 1.
+                Villa.objects.filter(order__gte=new_order).update(order=F('order') + 1)
+                
+            elif new_order < old_order:
+                # Case 2: Moving UP (e.g., 4 -> 2)
+                # We want to place item at 2. 
+                # Items currently at 2, 3 must shift DOWN (+1) to become 3, 4.
+                # Range to shift: [new_order, old_order - 1]
+                Villa.objects.filter(
+                    order__gte=new_order, 
+                    order__lt=old_order
+                ).update(order=F('order') + 1)
+                
+            elif new_order > old_order:
+                # Case 3: Moving DOWN (e.g., 2 -> 4)
+                # We want to place item at 4.
+                # Items currently at 3, 4 must shift UP (-1) to become 2, 3.
+                # Range to shift: [old_order + 1, new_order]
+                Villa.objects.filter(
+                    order__gt=old_order, 
+                    order__lte=new_order
+                ).update(order=F('order') - 1)
+            
+        serializer.save()
     
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):

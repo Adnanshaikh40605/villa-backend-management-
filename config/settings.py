@@ -239,14 +239,17 @@ SIMPLE_JWT = {
 }
 
 # ===== CORS (STRICT PRODUCTION) =====
+# ===== CORS (STRICT PRODUCTION) =====
 CORS_ALLOWED_ORIGINS = [
     "https://vacationbna.ai",
     "https://www.vacationbna.ai",
     "https://api.vacationbna.ai",
     "https://villa-backend-management-production.up.railway.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
-CORS_ALLOW_CREDENTIALS = False
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
@@ -259,6 +262,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://www.vacationbna.ai",
     "https://api.vacationbna.ai",
     "https://villa-backend-management-production.up.railway.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
 # Security settings for production
