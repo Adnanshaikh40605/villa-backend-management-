@@ -684,3 +684,110 @@ def booking_sources(request):
         })
     
     return Response(sources_data)
+
+
+@api_view(['GET'])
+def revenue_candles(request):
+    """
+    Get OHLC revenue data for trading-style charts
+    GET /api/v1/bookings/revenue-candles/?range=1M
+    """
+    from decimal import Decimal
+    from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
+    from django.db.models import Sum, Count
+    
+    time_range = request.query_params.get('range', '1M')
+    today = date.today()
+    
+    # Determine start date and truncation level
+    if time_range == '7D':
+        start_date = today - timedelta(days=7)
+        trunc_func = TruncDay('check_in')
+        freq = 'D' # Daily
+    elif time_range == '1M':
+        start_date = today - timedelta(days=30)
+        trunc_func = TruncDay('check_in')
+        freq = 'D'
+    elif time_range == '6M':
+        start_date = today - timedelta(days=180)
+        trunc_func = TruncWeek('check_in')
+        freq = 'W'
+    elif time_range == '1Y':
+        start_date = today - timedelta(days=365)
+        trunc_func = TruncMonth('check_in')
+        freq = 'M'
+    else: # Default 1M
+        start_date = today - timedelta(days=30)
+        trunc_func = TruncDay('check_in')
+        freq = 'D'
+
+    # Query Data
+    data = Booking.objects.filter(
+        check_in__gte=start_date,
+        check_in__lte=today,
+        status='booked'
+    ).annotate(
+        period=trunc_func
+    ).values('period').annotate(
+        revenue=Sum('total_payment'),
+        volume=Count('id')
+    ).order_by('period')
+
+    # Convert to Dictionary for fast lookup
+    data_map = {item['period'].strftime('%Y-%m-%d'): item for item in data}
+    
+    # Generate continuous timeline
+    ohlc_data = []
+    
+    # Generate Date List
+    date_list = []
+    temp_curr = start_date
+    while temp_curr <= today:
+        date_list.append(temp_curr)
+        if freq == 'D':
+            temp_curr += timedelta(days=1)
+        elif freq == 'W':
+             temp_curr += timedelta(weeks=1)
+        elif freq == 'M':
+            if temp_curr.month == 12:
+                temp_curr = temp_curr.replace(year=temp_curr.year+1, month=1, day=1)
+            else:
+                temp_curr = temp_curr.replace(month=temp_curr.month+1, day=1)
+                
+    
+    prev_close = float(0) # Start from 0
+    
+    for d in date_list:
+        d_str = d.strftime('%Y-%m-%d')
+        item = data_map.get(d_str)
+        
+        if item:
+            revenue = float(item['revenue'] or 0)
+            volume = item['volume']
+        else:
+            revenue = float(0)
+            volume = 0
+            
+        # OHLC Calculation: Trend-based
+        # Open = Previous Close
+        # Close = Current Revenue
+        
+        open_val = prev_close
+        close_val = revenue
+        
+        # High/Low are just boundaries of the candle body for this simple representation
+        high_val = max(open_val, close_val)
+        low_val = min(open_val, close_val)
+        
+        ohlc_data.append({
+            'time': d_str,
+            'open': open_val,
+            'high': high_val,
+            'low': low_val,
+            'close': close_val,
+            'volume': volume
+        })
+        
+        prev_close = close_val
+
+    return Response(ohlc_data)

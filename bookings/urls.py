@@ -15,6 +15,7 @@ urlpatterns = [
     path('recent-bookings/', views.recent_bookings, name='recent_bookings'),
     path('revenue-chart/', views.revenue_chart, name='revenue_chart'),
     path('villa-performance/', views.villa_performance, name='villa_performance'),
+    path('revenue-candles/', views.revenue_candles, name='revenue_candles'),
     # Explicitly register calculate-price to avoid router issues - MOVED TO CONFIG/URLS.PY
     # path('calculate-price/', views.calculate_price_view, name='calculate-price'),
     
