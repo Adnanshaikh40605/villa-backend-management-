@@ -219,14 +219,14 @@ REST_FRAMEWORK = {
 # JWT settings
 # Read token lifetimes from environment variables (in minutes) or use defaults
 # Default: 1 day (1440 minutes) for access token, 45 days (64800 minutes) for refresh token
-JWT_ACCESS_TOKEN_LIFETIME_MINUTES = config('JWT_ACCESS_TOKEN_LIFETIME', default=20160, cast=int)  # 14 days
-JWT_REFRESH_TOKEN_LIFETIME_MINUTES = config('JWT_REFRESH_TOKEN_LIFETIME', default=64800, cast=int)  # 45 days
+JWT_ACCESS_TOKEN_LIFETIME_MINUTES = config('JWT_ACCESS_TOKEN_LIFETIME', default=30, cast=int)  # 30 minutes
+JWT_REFRESH_TOKEN_LIFETIME_MINUTES = config('JWT_REFRESH_TOKEN_LIFETIME', default=10080, cast=int)  # 7 days
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=JWT_ACCESS_TOKEN_LIFETIME_MINUTES),
     'REFRESH_TOKEN_LIFETIME': timedelta(minutes=JWT_REFRESH_TOKEN_LIFETIME_MINUTES),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
