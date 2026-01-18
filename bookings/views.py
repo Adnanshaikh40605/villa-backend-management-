@@ -290,7 +290,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='calculate-price')
     def calculate_price(self, request):
         """
-        Calculate total payment for a booking preview
+        Calculate total payment for a booking preview with detailed breakdown
         POST /api/v1/bookings/calculate-price/
         Body: {"villa": ID, "check_in": "YYYY-MM-DD", "check_out": "YYYY-MM-DD"}
         """
@@ -331,22 +331,94 @@ class BookingViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Calculate total using same logic as Booking model
+        # Calculate total and breakdown using same logic as Booking model
         total = Decimal('0')
         current_date = check_in
+        breakdown = {
+            'total': Decimal('0'),
+            'nights': [],
+            'base_nights': 0,
+            'weekend_nights': 0,
+            'special_nights': 0,
+        }
         
         while current_date < check_out:
             # Get price for this specific date using priority hierarchy
             price = self._get_price_for_date(villa, current_date)
             total += price
+            
+            # Determine price type for this night
+            price_type = 'base'
+            
+            # Check if it's a special day
+            if villa.special_prices:
+                try:
+                    special_prices = villa.special_prices
+                    if isinstance(special_prices, list):
+                        for special_price in special_prices:
+                            if not isinstance(special_price, dict):
+                                continue
+                            
+                            start_date_str = special_price.get('start_date')
+                            end_date_str = special_price.get('end_date')
+                            sp_price = special_price.get('price')
+                            
+                            if not all([start_date_str, end_date_str, sp_price]):
+                                continue
+                            
+                            try:
+                                if isinstance(start_date_str, str):
+                                    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                                else:
+                                    start_date = start_date_str
+                                    
+                                if isinstance(end_date_str, str):
+                                    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                                else:
+                                    end_date = end_date_str
+                                
+                                if start_date <= current_date <= end_date:
+                                    price_type = 'special'
+                                    break
+                            except (ValueError, TypeError):
+                                continue
+                except (TypeError, AttributeError):
+                    pass
+            
+            # Check if it's a weekend (only if not already special)
+            if price_type != 'special':
+                day_of_week = current_date.weekday()
+                is_configured_weekend = (
+                    villa.weekend_days and 
+                    day_of_week in villa.weekend_days
+                )
+                if is_configured_weekend and villa.weekend_price:
+                    price_type = 'weekend'
+            
+            # Add to breakdown
+            breakdown['nights'].append({
+                'date': current_date.isoformat(),
+                'price': float(price),
+                'type': price_type
+            })
+            
+            if price_type == 'base':
+                breakdown['base_nights'] += 1
+            elif price_type == 'weekend':
+                breakdown['weekend_nights'] += 1
+            elif price_type == 'special':
+                breakdown['special_nights'] += 1
+            
             current_date += timedelta(days=1)
         
         nights = (check_out - check_in).days
+        breakdown['total'] = float(total)
         
         return Response({
             'total_payment': str(total),
             'nights': nights,
-            'price_per_night_avg': str(round(total / nights, 2)) if nights > 0 else '0'
+            'price_per_night_avg': str(round(total / nights, 2)) if nights > 0 else '0',
+            'auto_calculated_price': breakdown
         })
     
     def _get_price_for_date(self, villa, date):

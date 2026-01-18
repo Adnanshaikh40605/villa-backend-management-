@@ -93,6 +93,14 @@ class Booking(models.Model):
         verbose_name='Advance Payment (INR)',
         help_text='Amount paid in advance'
     )
+    override_total_payment = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Override Total Payment (INR)',
+        help_text='Manual override for total payment. If set, ignores auto-calculation.'
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -194,15 +202,18 @@ class Booking(models.Model):
     
     def save(self, *args, **kwargs):
         """
-        Save the booking and auto-calculate total payment based on villa pricing.
+        Save the booking and handle total payment calculation.
         
-        Pricing Priority (per night):
+        If override_total_payment is set:
+        - Use the override value as total_payment
+        
+        Otherwise, auto-calculate based on villa pricing:
         1. Special Date Price (from villa.special_prices)
         2. Weekend Price (if day is in villa.weekend_days)
         3. Base Price (villa.price_per_night)
         
         Payment Calculation:
-        - total_payment: Auto-calculated from pricing
+        - total_payment: Override or auto-calculated from pricing
         - advance_payment: User-entered amount
         - pending_payment: Calculated as (total_payment - advance_payment)
         """
@@ -210,17 +221,23 @@ class Booking(models.Model):
             from decimal import Decimal
             from datetime import timedelta
             
-            total = Decimal('0')
-            current_date = self.check_in
-            
-            # Iterate through each night of the stay
-            while current_date < self.check_out:
-                # Get price for this specific date using priority hierarchy
-                price = self._get_price_for_date(current_date)
-                total += price
-                current_date += timedelta(days=1)
-            
-            self.total_payment = total
+            # Check if manual override is provided
+            if self.override_total_payment is not None:
+                # Use the override value
+                self.total_payment = self.override_total_payment
+            else:
+                # Auto-calculate from villa pricing
+                total = Decimal('0')
+                current_date = self.check_in
+                
+                # Iterate through each night of the stay
+                while current_date < self.check_out:
+                    # Get price for this specific date using priority hierarchy
+                    price = self._get_price_for_date(current_date)
+                    total += price
+                    current_date += timedelta(days=1)
+                
+                self.total_payment = total
         
         # Validate advance_payment doesn't exceed total_payment
         if self.advance_payment and self.total_payment:
@@ -248,4 +265,98 @@ class Booking(models.Model):
         total = self.total_payment or Decimal('0')
         advance = self.advance_payment or Decimal('0')
         return total - advance
+    
+    @property
+    def auto_calculated_price(self):
+        """
+        Calculate what the total price would be based on villa pricing,
+        regardless of override. Returns price breakdown by date.
+        """
+        if not (self.check_in and self.check_out and self.villa):
+            return None
+        
+        from decimal import Decimal
+        from datetime import timedelta
+        
+        breakdown = {
+            'total': Decimal('0'),
+            'nights': [],
+            'base_nights': 0,
+            'weekend_nights': 0,
+            'special_nights': 0,
+        }
+        
+        current_date = self.check_in
+        
+        while current_date < self.check_out:
+            price = self._get_price_for_date(current_date)
+            breakdown['total'] += price
+            
+            # Determine price type for this night
+            price_type = 'base'
+            
+            # Check if it's a special day
+            if self.villa.special_prices:
+                try:
+                    from datetime import datetime
+                    special_prices = self.villa.special_prices
+                    if isinstance(special_prices, list):
+                        for special_price in special_prices:
+                            if not isinstance(special_price, dict):
+                                continue
+                            
+                            start_date_str = special_price.get('start_date')
+                            end_date_str = special_price.get('end_date')
+                            sp_price = special_price.get('price')
+                            
+                            if not all([start_date_str, end_date_str, sp_price]):
+                                continue
+                            
+                            try:
+                                if isinstance(start_date_str, str):
+                                    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                                else:
+                                    start_date = start_date_str
+                                    
+                                if isinstance(end_date_str, str):
+                                    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                                else:
+                                    end_date = end_date_str
+                                
+                                if start_date <= current_date <= end_date:
+                                    price_type = 'special'
+                                    break
+                            except (ValueError, TypeError):
+                                continue
+                except (TypeError, AttributeError):
+                    pass
+            
+            # Check if it's a weekend (only if not already special)
+            if price_type != 'special':
+                day_of_week = current_date.weekday()
+                is_configured_weekend = (
+                    self.villa.weekend_days and 
+                    day_of_week in self.villa.weekend_days
+                )
+                if is_configured_weekend and self.villa.weekend_price:
+                    price_type = 'weekend'
+            
+            # Add to breakdown
+            breakdown['nights'].append({
+                'date': current_date.isoformat(),
+                'price': float(price),
+                'type': price_type
+            })
+            
+            if price_type == 'base':
+                breakdown['base_nights'] += 1
+            elif price_type == 'weekend':
+                breakdown['weekend_nights'] += 1
+            elif price_type == 'special':
+                breakdown['special_nights'] += 1
+            
+            current_date += timedelta(days=1)
+        
+        breakdown['total'] = float(breakdown['total'])
+        return breakdown
 

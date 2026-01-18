@@ -8,6 +8,7 @@ class BookingSerializer(serializers.ModelSerializer):
     villa_details = VillaListSerializer(source='villa', read_only=True)
     nights = serializers.ReadOnlyField()
     pending_payment = serializers.ReadOnlyField()
+    auto_calculated_price = serializers.ReadOnlyField()
     
     class Meta:
         model = Booking
@@ -15,10 +16,11 @@ class BookingSerializer(serializers.ModelSerializer):
             'id', 'villa', 'villa_details', 'client_name', 'client_phone',
             'client_email', 'check_in', 'check_out', 'status',
             'number_of_guests', 'notes', 'payment_status', 'payment_method', 'booking_source',
-            'total_payment', 'advance_payment', 'pending_payment', 'nights', 
+            'total_payment', 'advance_payment', 'override_total_payment', 
+            'pending_payment', 'nights', 'auto_calculated_price',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'total_payment', 'pending_payment', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'pending_payment', 'auto_calculated_price', 'created_at', 'updated_at']
     
     def validate(self, data):
         """Custom validation for bookings"""
