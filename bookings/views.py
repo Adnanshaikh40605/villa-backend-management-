@@ -280,9 +280,13 @@ class BookingViewSet(viewsets.ModelViewSet):
                 'villa_id': booking.villa.id,
                 'villa_name': booking.villa.name,
                 'client_name': booking.client_name,
+                'client_phone': booking.client_phone,
+                'number_of_guests': booking.number_of_guests,
                 'check_in': booking.check_in,
                 'check_out': booking.check_out,
-                'status': booking.status
+                'status': booking.status,
+                'total_payment': booking.total_payment,
+                'override_total_payment': booking.override_total_payment,
             })
         
         return Response(calendar_data)

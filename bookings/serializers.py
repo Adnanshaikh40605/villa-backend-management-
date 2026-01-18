@@ -71,11 +71,13 @@ class BookingListSerializer(serializers.ModelSerializer):
     """Simplified serializer for booking list"""
     villa = VillaListSerializer(read_only=True)
     pending_payment = serializers.ReadOnlyField()
+    auto_calculated_price = serializers.ReadOnlyField()
     
     class Meta:
         model = Booking
         fields = [
             'id', 'villa', 'client_name', 'client_phone',
             'check_in', 'check_out', 'status', 'payment_status', 'payment_method',
-            'total_payment', 'advance_payment', 'pending_payment'
+            'total_payment', 'advance_payment', 'override_total_payment', 
+            'pending_payment', 'auto_calculated_price'
         ]
