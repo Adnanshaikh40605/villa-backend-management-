@@ -576,8 +576,57 @@ def dashboard_overview(request):
     if total_bookings > 0:
         avg_revenue = float(total_revenue) / total_bookings
     
-    # Active Clients (Unique clients based on phone number)
-    total_clients = Booking.objects.filter(status='booked').values('client_phone').distinct().count()
+    # Active Clients (unique non-empty phone numbers)
+    total_customers = Booking.objects.filter(
+        status='booked'
+    ).exclude(
+        client_phone__isnull=True
+    ).exclude(
+        client_phone=''
+    ).values('client_phone').distinct().count()
+
+    previous_month_end = month_start
+    if month_start.month == 1:
+        previous_month_start = month_start.replace(year=month_start.year - 1, month=12, day=1)
+    else:
+        previous_month_start = month_start.replace(month=month_start.month - 1, day=1)
+
+    previous_month_bookings = Booking.objects.filter(
+        check_in__gte=previous_month_start,
+        check_in__lt=previous_month_end,
+        status='booked'
+    )
+    previous_month_revenue = previous_month_bookings.aggregate(
+        total=Sum('total_payment')
+    )['total'] or Decimal('0')
+
+    def calculate_change(current, previous):
+        current = float(current or 0)
+        previous = float(previous or 0)
+        if previous == 0:
+            return 100 if current > 0 else 0
+        return round(((current - previous) / previous) * 100, 1)
+
+    month_revenue_change = calculate_change(revenue_this_month, previous_month_revenue)
+
+    villa_month_totals = {
+        item['villa']: item
+        for item in month_bookings.values('villa').annotate(
+            bookings=Count('id'),
+            revenue=Sum('total_payment')
+        )
+    }
+
+    villa_revenue_this_month = []
+    for villa in Villa.objects.order_by('order', 'name'):
+        metrics = villa_month_totals.get(villa.id, {})
+        villa_revenue_this_month.append({
+            'villa_id': villa.id,
+            'villa_name': villa.name,
+            'status': villa.status,
+            'bookings_this_month': metrics.get('bookings', 0),
+            'revenue_this_month': str(metrics.get('revenue') or Decimal('0')),
+        })
 
     return Response({
         'villas': {
@@ -593,7 +642,8 @@ def dashboard_overview(request):
         },
         'bookings': {
             'total': total_bookings,
-            'total_clients': total_clients, # Add this field
+            'total_clients': total_customers,
+            'total_customers': total_customers,
             'this_month': total_bookings_this_month,
             'upcoming_7_days': upcoming_bookings,
         },
@@ -601,7 +651,14 @@ def dashboard_overview(request):
             'total': str(total_revenue),
             'this_month': str(revenue_this_month),
             'average_per_booking': round(avg_revenue, 2),
-        }
+            'previous_month': str(previous_month_revenue),
+            'month_change_percentage': month_revenue_change,
+        },
+        'villa_revenue_this_month': villa_revenue_this_month,
+        'period': {
+            'month_start': month_start.isoformat(),
+            'month_end': (month_end - timedelta(days=1)).isoformat(),
+        },
     })
 
 
@@ -650,7 +707,15 @@ def revenue_chart(request):
     
     months = int(request.query_params.get('months', 6))
     today = date.today()
-    start_date = (today.replace(day=1) - timedelta(days=(months - 1) * 30)).replace(day=1)
+    current_month = today.replace(day=1)
+
+    def add_months(source_date, offset):
+        month_index = source_date.month - 1 + offset
+        year = source_date.year + month_index // 12
+        month = month_index % 12 + 1
+        return source_date.replace(year=year, month=month, day=1)
+
+    start_date = add_months(current_month, -(months - 1))
     
     # Optimized: Single query with TruncMonth
     # Note: SQLite has limited date function support compared to Postgres, 
@@ -673,8 +738,8 @@ def revenue_chart(request):
     data_map = {item['month'].strftime('%Y-%m'): item for item in monthly_data}
     chart_data = []
     
-    for i in range(months - 1, -1, -1):
-        month_date = today.replace(day=1) - timedelta(days=i * 30)
+    for i in range(months):
+        month_date = add_months(start_date, i)
         key = month_date.strftime('%Y-%m')
         
         item = data_map.get(key, {})
