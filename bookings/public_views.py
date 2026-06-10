@@ -27,6 +27,8 @@ DEFAULT_PRICING = {
     'extra_per_person': 500,
     'special_day_three_bhk': 10000,
     'special_day_four_bhk': 12000,
+    'three_bhk_max_guests': 8,
+    'four_bhk_max_guests': 10,
 }
 
 
@@ -54,11 +56,13 @@ def _compute_pricing(villas) -> dict:
         if bhk == '3bhk':
             pricing['weekday_three_bhk'] = weekday
             pricing['weekend_three_bhk'] = weekend
+            pricing['three_bhk_max_guests'] = villa.max_guests
             if villa.special_day_price:
                 pricing['special_day_three_bhk'] = int(villa.special_day_price)
         elif bhk == '4bhk':
             pricing['weekday_four_bhk'] = weekday
             pricing['weekend_four_bhk'] = weekend
+            pricing['four_bhk_max_guests'] = villa.max_guests
             if villa.special_day_price:
                 pricing['special_day_four_bhk'] = int(villa.special_day_price)
     return pricing
@@ -141,6 +145,7 @@ def public_availability(request):
             'name': villa.name,
             'short_name': _short_villa_name(villa.name),
             'bhk_type': _get_bhk_type(villa.name),
+            'max_guests': villa.max_guests,
             'availability': availability,
         })
 
