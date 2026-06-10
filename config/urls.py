@@ -34,6 +34,7 @@ urlpatterns = [
     
     # API v1 endpoints
     path('api/v1/auth/', include('accounts.urls')),
+    path('api/v1/public/', include('bookings.public_urls')),
     path('api/v1/', include('villas.urls')),
     
     # Explicitly register calculate-price here to guarantee precedence

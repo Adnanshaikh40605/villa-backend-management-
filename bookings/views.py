@@ -103,7 +103,7 @@ def send_email_confirmation(request, pk):
     message = f"""
 Dear {booking.client_name},
 
-Thank you for booking with VacationBNB!
+Thank you for booking with VacationBnA!
 
 Here are your booking details:
 Villa: {booking.villa.name}
@@ -121,7 +121,7 @@ Location: {booking.villa.location}
 If you have any questions, please reply to this email.
 
 Best regards,
-VacationBNB Team
+VacationBnA Team
     """.strip()
     
     if not booking.client_email:
