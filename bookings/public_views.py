@@ -20,8 +20,10 @@ from villas.public_holidays import (
 MAX_RANGE_DAYS = 93
 
 DEFAULT_PRICING = {
-    'three_bhk': 8000,
-    'four_bhk': 10000,
+    'weekday_three_bhk': 8000,
+    'weekday_four_bhk': 10000,
+    'weekend_three_bhk': 9000,
+    'weekend_four_bhk': 10000,
     'extra_per_person': 500,
     'special_day_three_bhk': 10000,
     'special_day_four_bhk': 12000,
@@ -47,12 +49,16 @@ def _compute_pricing(villas) -> dict:
     pricing = dict(DEFAULT_PRICING)
     for villa in villas:
         bhk = _get_bhk_type(villa.name)
+        weekday = int(villa.price_per_night)
+        weekend = int(villa.weekend_price) if villa.weekend_price else weekday
         if bhk == '3bhk':
-            pricing['three_bhk'] = int(villa.price_per_night)
+            pricing['weekday_three_bhk'] = weekday
+            pricing['weekend_three_bhk'] = weekend
             if villa.special_day_price:
                 pricing['special_day_three_bhk'] = int(villa.special_day_price)
         elif bhk == '4bhk':
-            pricing['four_bhk'] = int(villa.price_per_night)
+            pricing['weekday_four_bhk'] = weekday
+            pricing['weekend_four_bhk'] = weekend
             if villa.special_day_price:
                 pricing['special_day_four_bhk'] = int(villa.special_day_price)
     return pricing
